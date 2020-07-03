@@ -10,28 +10,33 @@
 		<link href="https://fonts.googleapis.com/css?family=Raleway:500,700&display=swap" rel="stylesheet">
 		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.13.1/css/all.css" integrity="sha384-xxzQGERXS00kBmZW/6qxqJPyxW3UR0BPsL4c8ILaIWXva5kFi7TxkIIaMiKtqV1Q" crossorigin="anonymous">
 		<link rel="stylesheet" href="./css/style.css">
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/css/bootstrap.min.css" integrity="sha384-r4NyP46KrjDleawBgD5tp8Y7UzmLA05oM1iAEQ17CSuDqnUK2+k9luXQOfXJCJ4I" crossorigin="anonymous">
 	</head>
 	<body>
 
-		<canvas id="c"></canvas>
+		<div class="container">
 
-		<div class="controls">
-			<!-- This tray will be filled with colors via JS, and the ability to slide this panel will be added in with a lightweight slider script (no dependency used for this) -->
-			 <div id="js-tray" class="tray">
-				 <div id="js-tray-slide" class="tray__slide"></div>
-			 </div>
-		</div>
+			<h1>CLGECREW - Plugin V.0.1</h1>
+			<canvas id="c"></canvas>
 
-		<!-- These toggle the the different parts of the chair that can be edited, note data-option is the key that links to the name of the part in the 3D file -->
-		<div class="options">
-			<div class="option --is-active" data-option="arriere">
-				<img src="https://img1.freepng.fr/20180204/zxe/kisspng-hill-climb-racing-mad-skills-motocross-2-x-games-m-motocross-png-image-5a773256a67ad3.6134970215177611106819.jpg" alt=""/>
+			<div class="controls">
+				<!-- This tray will be filled with colors via JS, and the ability to slide this panel will be added in with a lightweight slider script (no dependency used for this) -->
+				<div id="js-tray" class="tray">
+					<div id="js-tray-slide" class="tray__slide"></div>
+				</div>
 			</div>
-			<div class="option" data-option="avant">
-				<img src="https://img1.freepng.fr/20180204/zxe/kisspng-hill-climb-racing-mad-skills-motocross-2-x-games-m-motocross-png-image-5a773256a67ad3.6134970215177611106819.jpg" alt=""/>
-			</div>
-			<div class="option" data-option="complet">
-				<img src="https://img1.freepng.fr/20180204/zxe/kisspng-hill-climb-racing-mad-skills-motocross-2-x-games-m-motocross-png-image-5a773256a67ad3.6134970215177611106819.jpg" alt=""/>
+
+			<!-- These toggle the the different parts of the chair that can be edited, note data-option is the key that links to the name of the part in the 3D file -->
+			<div class="options">
+				<div class="option --is-active" data-option="arriere">
+					<img src="./img/motocross.png" alt=""/>
+				</div>
+				<div class="option" data-option="avant">
+					<img src="./img/motocross.png" alt=""/>
+				</div>
+				<div class="option" data-option="complet">
+					<img src="./img/motocross.png" alt=""/>
+				</div>
 			</div>
 		</div>
 
@@ -43,8 +48,13 @@
 
 		<!-- This is a simple to use extension for Three.js that activates all the rotating, dragging and zooming controls we need for both mouse and touch, there isn't a clear CDN for this that I can find -->
 		<script src='https://threejs.org/examples/js/controls/OrbitControls.js'></script>
+		
+		<!-- GSAP -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.3.4/gsap.min.js"></script>
 
+		<script src="./js/animation.js"></script>
 		<script src="./js/app.js"></script>
+		
 	</body>
 </html>
 

@@ -1,256 +1,298 @@
 
-/* https://tympanus.net/codrops/2019/09/17/how-to-build-a-color-customizer-app-for-a-3d-model-with-three-js/ */
+const app = {
 
-const TRAY = document.getElementById('js-tray-slide');
+    TRAY: document.getElementById('js-tray-slide'),
+    DRAG_NOTICE: document.getElementById('js-drag-notice'),
+    // canvas : document.querySelector('#c'),
+    BACKGROUND_COLOR: 0xf1f1f1,
+    MODEL_PATH: "../textures/scene.glb",
+    INITIAL_MAP: null,
+    INITIAL_MTL: null,
+    theModel: null,
+    scene: null,
+    renderer: null,
+    camera: null,
+    loader: null,
+    floor: null,
+    activeOption: 'complet',
+    cameraFar: 10,
+    loaded: false,
+    colors: [
+        {
+            color: '0080ff'
+        },
+        {
+            color: 'ffff00'
+        },
+        {
+            color: '00ff40'
+        },
+        {
+            color: '27548D'
+        },
+        {
+            color: 'ff0000'
+        }  
+    ],
 
-let cameraFar = 5;
-let theModel;
-let activeOption = 'complet';
-let loaded = false;
+    setColor: () => {
 
-
-const colors = [
-    {
-        color: '0080ff'
+        app.INITIAL_MTL = new THREE.MeshPhongMaterial( { color: 0xf1f1f1, shininess: 10 } ); // Initial material
+        
+        app.INITIAL_MAP = [
+            { childID: "arriere", mtl: app.INITIAL_MTL },
+            { childID: "avant", mtl: app.INITIAL_MTL },
+            { childID: "complet", mtl: app.INITIAL_MTL },
+        ];
     },
-    {
-        color: 'ffff00'
+
+    // Init the scene
+    initScene: () => {
+
+        app.scene = new THREE.Scene();
+
+        // Set background
+        app.scene.background = new THREE.Color(app.BACKGROUND_COLOR );
+        app.scene.fog = new THREE.Fog(app.BACKGROUND_COLOR, 20, 100);
     },
-    {
-        color: '00ff40'
+
+    // Init the renderer
+    initRenderer: () => {
+
+        const canvas = document.querySelector('#c')
+
+        app.renderer = new THREE.WebGLRenderer({ canvas,  antialias: true });
+        app.renderer.shadowMap.enabled = true;
+        app.renderer.setPixelRatio(window.devicePixelRatio); 
+
+        const container = document.querySelector('.container');
+        container.appendChild(app.renderer.domElement);
     },
-    {
-        color: '27548D'
+    
+    // Add a camera   
+    addCamera: () => {
+
+        app.camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        app.camera.position.z = app.cameraFar;
+        app.camera.position.x = 1;
+        app.camera.position.y = 4;
     },
-    {
-        color: 'ff0000'
-    }  
-];
 
-const DRAG_NOTICE = document.getElementById('js-drag-notice');
+    initObjLoader: () => {
 
-const BACKGROUND_COLOR = 0xf1f1f1 ;
-// const MODEL_PATH =  "https://s3-us-west-2.amazonaws.com/s.cdpn.io/1376484/chair.glb";
-const MODEL_PATH =  "../textures/scene.glb";
+        app.loader = new THREE.GLTFLoader(); // Init the object loader
 
-// Initial material
-const INITIAL_MTL = new THREE.MeshPhongMaterial( { color: 0xf1f1f1, shininess: 10 } );
+        app.loader.load(app.MODEL_PATH, function(gltf) {
 
-const INITIAL_MAP = [
-    {childID: "arriere", mtl: INITIAL_MTL},
-    {childID: "avant", mtl: INITIAL_MTL},
-    {childID: "complet", mtl: INITIAL_MTL},
-  ];
+            app.theModel = gltf.scene;
 
-// Init the scene 
-const scene = new THREE.Scene();
+            app.theModel.traverse((o) => {
+                if (o.isMesh) {
+                    o.castShadow = true;
+                    o.receiveShadow = true;
+                }
+            });
 
-// Set background
-scene.background = new THREE.Color(BACKGROUND_COLOR );
-scene.fog = new THREE.Fog(BACKGROUND_COLOR, 20, 100);
+            app.theModel.scale.set(0.06,0.06,0.06);  // Set the models initial scale   
+            app.theModel.rotation.y = Math.PI;
+            app.theModel.position.y = -1; // Offset the y position a bit
 
-const canvas = document.querySelector('#c');
+            // Set initial textures
+            for (let object of app.INITIAL_MAP) {
+                app.initColor(app.theModel, object.childID, object.mtl);
+            }
 
-// Init the renderer
-const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
-    renderer.shadowMap.enabled = true;
-    renderer.setPixelRatio(window.devicePixelRatio); 
+            app.scene.add(app.theModel); // Add the model to the scene
+            // app2.js:106 TypeError: Cannot read property 'add' of undefined
 
-document.body.appendChild(renderer.domElement);
+        }, undefined, function(error) {
+            console.error(error)
+        });
+    },
 
-// Add a camera
-let camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = cameraFar;
-camera.position.x = 2;
-camera.position.y = 8;
+    initColor: (parent, type, mtl) => {
+        // Function - Add the textures to the models
+        parent.traverse((o) => {
+            if (o.isMesh) {
+                if (o.name.includes(type)) {
+                    o.material = mtl;
+                    o.nameID = type; // Set a new property to identify this object
+                }
+            }
+        });
+    },
 
-// Init the object loader
-let loader = new THREE.GLTFLoader();
+    // Add Floor & Lights
+    addLights: () => {
 
-loader.load(MODEL_PATH, function(gltf) {
+        app.hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.61 );
+        app.hemiLight.position.set( 0, 50, 0 );
 
-    theModel = gltf.scene;
+        // Floor
+        let floorGeometry = new THREE.PlaneGeometry(5000, 5000, 1, 1);
+        let floorMaterial = new THREE.MeshPhongMaterial({
+            color: 0xeeeeee, // <------- Here
+            shininess: 0
+        });
 
-    theModel.traverse((o) => {
-        if (o.isMesh) {
-            o.castShadow = true;
-            o.receiveShadow = true;
-        }
-    });
+        app.floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        app.floor.rotation.x = -0.5 * Math.PI;
+        app.floor.receiveShadow = true;
+        app.floor.position.y = -1;
+        app.scene.add(app.floor);
 
-    // Set the models initial scale   
-    theModel.scale.set(0.05,0.05,0.05);
+        // Add hemisphere light to scene   
+        app.scene.add(app.hemiLight);
+    },
+    
+    setDirLight: () => {
 
-    /* 
-        Three.js ne prend pas en charge des degrés autant que je sache, tout le monde semble utiliser Math.PI. . 
-        Cela équivaut à 180 degrés, donc si vous voulez quelque chose à un angle de 45 degrés, 
-        vous utiliserez Math.PI / 4.
-    */
-    theModel.rotation.y = Math.PI;
+        app.dirLight = new THREE.DirectionalLight( 0xffffff, 0.54 );
+        app.dirLight.position.set( -8, 12, 8 );
+        app.dirLight.castShadow = true;
+        app.dirLight.shadow.mapSize = new THREE.Vector2(1024, 1024);
+    
+        // Add directional Light to scene    
+        app.scene.add(app.dirLight);
+    },
 
-    // Offset the y position a bit
-    theModel.position.y = -1;
+    // Add controls
+    addControls: () => {
+        
+        app.controls = new THREE.OrbitControls( app.camera, app.renderer.domElement );
+        app.controls.maxPolarAngle = Math.PI / 2;
+        app.controls.minPolarAngle = Math.PI / 4;
+        app.controls.enableDamping = true;
+        app.controls.enablePan = false;
+        app.controls.dampingFactor = 0.1;
+        app.controls.autoRotate = false; // Toggle this if you'd like the chair to automatically rotate
+        app.controls.autoRotateSpeed = 0.2; // 30
+    },
 
-    // Set initial textures
-    for (let object of INITIAL_MAP) {
-        initColor(theModel, object.childID, object.mtl);
-    }
+    resizeRendererToDisplaySize: () => {
 
-    // Add the model to the scene
-    scene.add(theModel);
-
-    }, undefined, function(error) {
-    console.error(error)
-});
-
-// Function - Add the textures to the models
-const initColor = (parent, type, mtl) => {
-    parent.traverse((o) => {
-     if (o.isMesh) {
-       if (o.name.includes(type)) {
-            o.material = mtl;
-            o.nameID = type; // Set a new property to identify this object
-         }
-     }
-   });
-  }
-
-// Add lights
-let hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.61 );
-    hemiLight.position.set( 0, 50, 0 );
-
-// Floor
-let floorGeometry = new THREE.PlaneGeometry(5000, 5000, 1, 1);
-let floorMaterial = new THREE.MeshPhongMaterial({
-  color: 0xeeeeee, // <------- Here
-  shininess: 0
-});
-
-
-let floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.rotation.x = -0.5 * Math.PI;
-    floor.receiveShadow = true;
-    floor.position.y = -1;
-scene.add(floor);
-
-// Add hemisphere light to scene   
-scene.add( hemiLight );
-
-let dirLight = new THREE.DirectionalLight( 0xffffff, 0.54 );
-    dirLight.position.set( -8, 12, 8 );
-    dirLight.castShadow = true;
-    dirLight.shadow.mapSize = new THREE.Vector2(1024, 1024);
-
-// Add directional Light to scene    
-scene.add( dirLight );
-
-// Add controls
-let controls = new THREE.OrbitControls( camera, renderer.domElement );
-controls.maxPolarAngle = Math.PI / 2;
-controls.minPolarAngle = Math.PI / 3;
-controls.enableDamping = true;
-controls.enablePan = false;
-controls.dampingFactor = 0.1;
-controls.autoRotate = false; // Toggle this if you'd like the chair to automatically rotate
-controls.autoRotateSpeed = 0.2; // 30
-
-
-const resizeRendererToDisplaySize = (renderer) => {
-    const canvas = renderer.domElement;
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-    let canvasPixelWidth = canvas.width / window.devicePixelRatio;
-    let canvasPixelHeight = canvas.height / window.devicePixelRatio;
-  
-    const needResize = canvasPixelWidth !== width || canvasPixelHeight !== height;
-    if (needResize) {
+        canvas = app.renderer.domElement;
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        let canvasPixelWidth = canvas.width / window.devicePixelRatio;
+        let canvasPixelHeight = canvas.height / window.devicePixelRatio;
       
-      renderer.setSize(width, height, false);
-    }
-    return needResize;
-};
+        const needResize = canvasPixelWidth !== width || canvasPixelHeight !== height;
 
-const animate = () => {
+        if (needResize) {
+          
+          app.renderer.setSize(width, height, false);
+        }
 
-    controls.update();
-    renderer.render(scene, camera);
-    requestAnimationFrame(animate);
+        return needResize;
+    },
+
+    animate: () => {
+
+        app.controls.update();
+        app.renderer.render(app.scene, app.camera);
+        requestAnimationFrame(app.animate);
+        
+        if (app.resizeRendererToDisplaySize(app.renderer)) {
+            const canvas = app.renderer.domElement;
+            app.camera.aspect = canvas.clientWidth / canvas.clientHeight;
+            app.camera.updateProjectionMatrix();
+        }
+    },
+
+    // Function - Build Colors
+    buildColors: (colors) => {
+
+        for (let [i, color] of colors.entries()) {
+            let swatch = document.createElement('div');
+            swatch.classList.add('tray__swatch');
+            swatch.style.background = "#" + color.color;
+            swatch.setAttribute('data-key', i);
+            app.TRAY.append(swatch);
+        };
+    },
+
+    // Select color
+    selectColor: (e) => {
+
+        const colors = document.querySelectorAll('.tray__swatch');
+
+        for (const otherColor of colors) {
+            otherColor.classList.remove('--is-active');
+        }
+
+        e.target.classList.add("--is-active");
+        
+        let color = app.colors[parseInt(e.target.dataset.key)];
+        let new_mtl;
+
+        new_mtl = new THREE.MeshPhongMaterial({
+            color: parseInt('0x' + color.color),
+            shininess: color.shininess ? color.shininess : 10
+        });
     
-    if (resizeRendererToDisplaySize(renderer)) {
-      const canvas = renderer.domElement;
-      camera.aspect = canvas.clientWidth / canvas.clientHeight;
-      camera.updateProjectionMatrix();
-    }
+        app.setMaterial(app.theModel, app.activeOption, new_mtl);
+    },
+
+    setMaterial: (parent, type, mtl) => {
+
+        parent.traverse((o) => {
+           
+        // console.log("o.nameID : " + o.nameID);
+        // console.log("o.isMesh : " + o.isMesh);
     
-
-  }
-  
-  animate();
-
-
-// Function - Build Colors
-const buildColors = (colors) => {
-    for (let [i, color] of colors.entries()) {
-      let swatch = document.createElement('div');
-      swatch.classList.add('tray__swatch');
-  
-        swatch.style.background = "#" + color.color;
-  
-      swatch.setAttribute('data-key', i);
-      TRAY.append(swatch);
-    }
-};
-  
-buildColors(colors);
-
-// Sélectionne la "couleur"
-const selectSwatch = (e) => {
-    let color = colors[parseInt(e.target.dataset.key)];
-    let new_mtl;
-
-     new_mtl = new THREE.MeshPhongMaterial({
-         color: parseInt('0x' + color.color),
-         shininess: color.shininess ? color.shininess : 10
-       });
-   
-   setMaterial(theModel, activeOption, new_mtl);
-};
-
-const setMaterial = (parent, type, mtl) => {
-    parent.traverse((o) => {
-
-        console.log(o)
-        console.log("o.nameID : " + o.nameID);
-        console.log("o.isMesh : " + o.isMesh);
-
-     if (o.isMesh && o.nameID != null) {
-       if (o.nameID == type) {
-            o.material = mtl;
+         if (o.isMesh && o.nameID != null) {
+           if (o.nameID == type) {
+                o.material = mtl;
+             }
          }
-     }
-   });
-  };
+       });
+    },
 
-const swatches = document.querySelectorAll(".tray__swatch");
+    eventToAction: () => {
 
-for (const swatch of swatches) {
-  swatch.addEventListener('click', selectSwatch);
-}
+        const swatches = document.querySelectorAll(".tray__swatch");
+        for (const swatch of swatches) {
+          swatch.addEventListener('click', app.selectColor);
+        };
 
-// Select Option
-const options = document.querySelectorAll(".option");
+        const options = document.querySelectorAll(".option");
+        for (const option of options) {
+            option.addEventListener('click', app.selectOption);
+        }
+    },
 
-const selectOption = (e) => {
-    let option = e.target;
-    activeOption = e.target.dataset.option;
-    for (const otherOption of options) {
-      otherOption.classList.remove('--is-active');
-    }
-    option.classList.add('--is-active');
-  }
+    selectOption: (e) => {
+        // Select Option
+        const options = document.querySelectorAll(".option");
 
-  
-for (const option of options) {
-  option.addEventListener('click',selectOption);
-}
+        let option = e.target;
+        app.activeOption = e.target.dataset.option;
 
+        for (const otherOption of options) {
+            otherOption.classList.remove('--is-active');
+        }
+        option.classList.add('--is-active');
+    },
+
+    init : () => {
+
+        app.setColor();
+        app.initScene();
+        app.initRenderer();
+        app.addCamera();
+        app.initObjLoader();
+        app.addLights();
+        app.setDirLight();
+        app.addControls();
+        app.animate();
+        app.buildColors(app.colors);
+        app.eventToAction();
+
+        animation.staggersColors();
+
+        console.log("Start");
+    },
+};
+
+document.addEventListener('DOMContentLoaded', app.init());

@@ -2,7 +2,7 @@
 
 ### Première ébauche :
 
-![](https://i.imgur.com/popzvpF.gif)
+![](https://i.imgur.com/DeXY55D.gif)
 
 
 ### ToDo :
@@ -12,4 +12,3 @@
 3. Ajouter/Supprimer/Modifier(Agrandir/Réduire) les logos.
 4. Importer ses propres logos
 
-ThreeJS-MotoCustom
