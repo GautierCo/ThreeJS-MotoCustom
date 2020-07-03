@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<!-- Imporant meta information to make the page as rigid as possible on mobiles, to avoid unintentional zooming on the page itself  -->
+		<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<title>Chair Tutorial</title>
+		<link href="https://fonts.googleapis.com/css?family=Raleway:500,700&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.13.1/css/all.css" integrity="sha384-xxzQGERXS00kBmZW/6qxqJPyxW3UR0BPsL4c8ILaIWXva5kFi7TxkIIaMiKtqV1Q" crossorigin="anonymous">
+		<link rel="stylesheet" href="./css/style.css">
+	</head>
+	<body>
+
+		<canvas id="c"></canvas>
+
+		<div class="controls">
+			<!-- This tray will be filled with colors via JS, and the ability to slide this panel will be added in with a lightweight slider script (no dependency used for this) -->
+			 <div id="js-tray" class="tray">
+				 <div id="js-tray-slide" class="tray__slide"></div>
+			 </div>
+		</div>
+
+		<!-- These toggle the the different parts of the chair that can be edited, note data-option is the key that links to the name of the part in the 3D file -->
+		<div class="options">
+			<div class="option --is-active" data-option="arriere">
+				<img src="https://img1.freepng.fr/20180204/zxe/kisspng-hill-climb-racing-mad-skills-motocross-2-x-games-m-motocross-png-image-5a773256a67ad3.6134970215177611106819.jpg" alt=""/>
+			</div>
+			<div class="option" data-option="avant">
+				<img src="https://img1.freepng.fr/20180204/zxe/kisspng-hill-climb-racing-mad-skills-motocross-2-x-games-m-motocross-png-image-5a773256a67ad3.6134970215177611106819.jpg" alt=""/>
+			</div>
+			<div class="option" data-option="complet">
+				<img src="https://img1.freepng.fr/20180204/zxe/kisspng-hill-climb-racing-mad-skills-motocross-2-x-games-m-motocross-png-image-5a773256a67ad3.6134970215177611106819.jpg" alt=""/>
+			</div>
+		</div>
+
+		<!-- The main Three.js file -->
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/108/three.min.js'></script>
+
+		<!-- This brings in the ability to load custom 3D objects in the .gltf file format. Blender allows the ability to export to this format out the box -->
+		<script src='https://cdn.jsdelivr.net/gh/mrdoob/Three.js@r92/examples/js/loaders/GLTFLoader.js'></script>
+
+		<!-- This is a simple to use extension for Three.js that activates all the rotating, dragging and zooming controls we need for both mouse and touch, there isn't a clear CDN for this that I can find -->
+		<script src='https://threejs.org/examples/js/controls/OrbitControls.js'></script>
+
+		<script src="./js/app.js"></script>
+	</body>
+</html>
+
